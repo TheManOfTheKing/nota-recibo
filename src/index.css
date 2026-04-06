@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3fff8b;
+  --color-on-primary: #005d2c;
+  --color-primary-container: #13ea79;
+  --color-on-primary-container: #004f24;
+  --color-secondary: #6e9bff;
+  --color-on-secondary: #001d4e;
+  --color-secondary-container: #0058ca;
+  --color-on-secondary-container: #f7f7ff;
+  --color-background: #0e0e0e;
+  --color-on-background: #ffffff;
+  --color-surface: #0e0e0e;
+  --color-on-surface: #ffffff;
+  --color-surface-variant: #262626;
+  --color-on-surface-variant: #adaaaa;
+  --color-outline: #767575;
+  --color-outline-variant: #484847;
+  --color-surface-container-highest: #262626;
+  --color-surface-container-high: #20201f;
+  --color-surface-container: #1a1a1a;
+  --color-surface-container-low: #131313;
+  --color-surface-container-lowest: #000000;
+  --color-surface-bright: #2c2c2c;
+  --color-surface-dim: #0e0e0e;
+  
+  --font-headline: "Lexend", sans-serif;
+  --font-body: "Manrope", sans-serif;
+  --font-label: "Manrope", sans-serif;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+}
+
+.primary-gradient-btn {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
+  box-shadow: inset 1px 1px 2px rgba(255,255,255,0.2);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-bottom: 2px solid var(--color-primary) !important;
+}
