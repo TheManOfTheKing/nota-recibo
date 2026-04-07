@@ -1,18 +1,23 @@
-import { FileText, Users, History, Briefcase } from 'lucide-react';
+import { FileText, Users, History, Briefcase, Shield } from 'lucide-react';
 import { TabType } from '../types';
 
 interface BottomNavProps {
   activeTab: TabType;
   onChange: (tab: TabType) => void;
+  isAdmin?: boolean;
 }
 
-export function BottomNav({ activeTab, onChange }: BottomNavProps) {
-  const navItems = [
+export function BottomNav({ activeTab, onChange, isAdmin = false }: BottomNavProps) {
+  const navItems: Array<{ id: TabType; icon: typeof FileText; label: string }> = [
     { id: 'generate', icon: FileText, label: 'Gerar' },
     { id: 'customers', icon: Users, label: 'Clientes' },
     { id: 'history', icon: History, label: 'Histórico' },
     { id: 'issuer', icon: Briefcase, label: 'Emissor' },
-  ] as const;
+  ];
+
+  if (isAdmin) {
+    navItems.push({ id: 'users', icon: Shield, label: 'Usuários' });
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-[#131313]/70 backdrop-blur-xl z-50 rounded-t-xl border-t border-[#484847]/15 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">

@@ -37,12 +37,25 @@ export interface DocumentRecord {
   updatedAt?: string;
 }
 
-export type TabType = 'generate' | 'customers' | 'history' | 'issuer';
+export type TabType = 'generate' | 'customers' | 'history' | 'issuer' | 'users';
 
 export type UserRole = 'admin' | 'user';
+export type ApprovalStatus = 'pending' | 'approved';
 
 export interface UserProfile {
   id: string;
+  email: string | null;
   role: UserRole;
+  approvalStatus: ApprovalStatus;
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string | null;
+  role: UserRole;
+  approvalStatus: ApprovalStatus;
+  createdAt: string;
+  approvedAt: string | null;
+  approvedBy: string | null;
 }
 

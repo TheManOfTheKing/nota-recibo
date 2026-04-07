@@ -85,7 +85,7 @@ export function RegisterForm({
           <ShieldCheck className="h-4 w-4 text-primary" />
           Regra de segurança
         </div>
-        O primeiro usuário registrado vira <strong>admin</strong>. Os próximos usuários são <strong>user</strong>.
+        Novos cadastros ficam <strong>pendentes</strong> até aprovação de um usuário <strong>admin</strong>.
       </div>
 
       <div className="space-y-2">

@@ -7,6 +7,7 @@ import { CustomersScreen } from './screens/CustomersScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { IssuerScreen } from './screens/IssuerScreen';
 import { AuthScreen } from './screens/AuthScreen';
+import { UsersScreen } from './screens/UsersScreen';
 import { useAppStore } from './store';
 import { supabase } from './lib/supabase';
 import {
@@ -16,6 +17,13 @@ import {
   signUpWithPassword,
   toAuthErrorMessage,
 } from './lib/auth';
+import {
+  approveUser,
+  listManagedUsers,
+  rejectAndRemoveUser,
+  toAdminUsersErrorMessage,
+  updateUserRole,
+} from './lib/adminUsers';
 import {
   createEmitter,
   deleteEmitter,
@@ -37,7 +45,7 @@ import {
   createReceiptDocument,
   toDocumentErrorMessage,
 } from './lib/documents';
-import type { Customer, Emitter, UserProfile } from './types';
+import type { Customer, Emitter, ManagedUser, UserProfile, UserRole } from './types';
 
 function AuthLoadingScreen() {
   return (
@@ -56,7 +64,8 @@ function MissingProfileScreen({ onSignOut }: { onSignOut: () => Promise<void> })
       <div className="max-w-md rounded-2xl border border-red-500/40 bg-surface-container p-6">
         <h2 className="text-xl font-bold">Falha ao carregar perfil</h2>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Não foi possível carregar seu perfil no Supabase. Verifique se a tabela <code>profiles</code> existe com as colunas <code>id</code> e <code>role</code>.
+          Não foi possível carregar seu perfil no Supabase. Verifique se a tabela <code>profiles</code> existe com as colunas{' '}
+          <code>id</code>, <code>email</code>, <code>role</code> e <code>approval_status</code>.
         </p>
         <button
           type="button"
@@ -70,10 +79,45 @@ function MissingProfileScreen({ onSignOut }: { onSignOut: () => Promise<void> })
   );
 }
 
+function PendingApprovalScreen({
+  email,
+  isSigningOut,
+  onSignOut,
+}: {
+  email: string;
+  isSigningOut: boolean;
+  onSignOut: () => Promise<void>;
+}) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 text-on-background">
+      <section className="w-full max-w-md rounded-2xl border border-amber-500/50 bg-surface-container p-6">
+        <p className="text-xs font-extrabold uppercase tracking-widest text-amber-300">Aguardando aprovação</p>
+        <h1 className="mt-2 text-2xl font-black text-on-surface">Conta criada com sucesso</h1>
+        <p className="mt-3 text-sm text-on-surface-variant">
+          A conta <strong>{email}</strong> está pendente de aprovação por um administrador.
+        </p>
+        <p className="mt-2 text-sm text-on-surface-variant">
+          Você poderá acessar o aplicativo assim que um admin aprovar seu cadastro e definir seu papel.
+        </p>
+        <button
+          type="button"
+          onClick={() => void onSignOut()}
+          disabled={isSigningOut}
+          className="mt-6 h-12 w-full rounded-xl bg-zinc-900 px-4 text-sm font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
+        >
+          {isSigningOut ? 'Saindo...' : 'Sair da conta'}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+type AuthStatus = 'loading' | 'authenticated' | 'pending_approval' | 'unauthenticated';
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authProfile, setAuthProfile] = useState<UserProfile | null>(null);
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -85,13 +129,20 @@ export default function App() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(false);
   const [customersError, setCustomersError] = useState<string | null>(null);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
+  const [isManagedUsersLoading, setIsManagedUsersLoading] = useState(false);
+  const [managedUsersError, setManagedUsersError] = useState<string | null>(null);
 
-  const {
-    activeTab,
-    setActiveTab,
-    history,
-    addDocument,
-  } = useAppStore();
+  const { activeTab, setActiveTab, history, addDocument } = useAppStore();
+
+  const clearProtectedState = () => {
+    setEmitters([]);
+    setEmittersError(null);
+    setCustomers([]);
+    setCustomersError(null);
+    setManagedUsers([]);
+    setManagedUsersError(null);
+  };
 
   const syncSession = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession);
@@ -99,23 +150,24 @@ export default function App() {
     if (!nextSession?.user) {
       setAuthStatus('unauthenticated');
       setAuthProfile(null);
-      setEmitters([]);
-      setEmittersError(null);
-      setCustomers([]);
-      setCustomersError(null);
+      clearProtectedState();
       setIsAuthLoading(false);
       return;
     }
 
     try {
       const profile = await ensureUserProfile(nextSession.user);
-      setAuthStatus('authenticated');
       setAuthProfile(profile);
       setAuthError(null);
+      setAuthStatus(profile.approvalStatus === 'approved' ? 'authenticated' : 'pending_approval');
+      if (profile.approvalStatus !== 'approved') {
+        clearProtectedState();
+      }
     } catch (error) {
       setAuthStatus('unauthenticated');
       setAuthProfile(null);
       setAuthError(toAuthErrorMessage(error));
+      clearProtectedState();
     } finally {
       setIsAuthLoading(false);
     }
@@ -158,6 +210,12 @@ export default function App() {
     };
   }, [syncSession]);
 
+  useEffect(() => {
+    if (activeTab === 'users' && authProfile?.role !== 'admin') {
+      setActiveTab('generate');
+    }
+  }, [activeTab, authProfile?.role, setActiveTab]);
+
   const handleLogin = async (credentials: { email: string; password: string }) => {
     setIsAuthSubmitting(true);
     setAuthError(null);
@@ -180,7 +238,9 @@ export default function App() {
     try {
       const result = await signUpWithPassword(credentials);
       if (result.requiresEmailConfirmation) {
-        setAuthInfo('Conta criada. Confirme o e-mail para concluir o acesso.');
+        setAuthInfo('Conta criada. Confirme o e-mail e aguarde a aprovação de um administrador.');
+      } else {
+        setAuthInfo('Conta criada. Aguarde a aprovação de um administrador para acessar o sistema.');
       }
     } catch (error) {
       setAuthError(toAuthErrorMessage(error));
@@ -195,10 +255,7 @@ export default function App() {
       await signOutCurrentUser();
       setActiveTab('generate');
       setAuthInfo(null);
-      setEmitters([]);
-      setEmittersError(null);
-      setCustomers([]);
-      setCustomersError(null);
+      clearProtectedState();
     } catch (error) {
       setAuthError(toAuthErrorMessage(error));
     } finally {
@@ -253,6 +310,69 @@ export default function App() {
 
     void loadCustomers(session.user.id);
   }, [authStatus, loadCustomers, session?.user?.id]);
+
+  const loadManagedUsers = useCallback(async () => {
+    setIsManagedUsersLoading(true);
+    setManagedUsersError(null);
+    try {
+      const users = await listManagedUsers();
+      setManagedUsers(users);
+    } catch (error) {
+      setManagedUsersError(toAdminUsersErrorMessage(error));
+    } finally {
+      setIsManagedUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || authProfile?.role !== 'admin') {
+      setManagedUsers([]);
+      setManagedUsersError(null);
+      setIsManagedUsersLoading(false);
+      return;
+    }
+
+    void loadManagedUsers();
+  }, [authStatus, authProfile?.role, loadManagedUsers]);
+
+  const handleApproveUser = async (targetUserId: string, role: UserRole) => {
+    if (authProfile?.role !== 'admin') {
+      throw new Error('Apenas administradores podem aprovar usuários.');
+    }
+
+    try {
+      await approveUser(targetUserId, role);
+      await loadManagedUsers();
+    } catch (error) {
+      throw new Error(toAdminUsersErrorMessage(error));
+    }
+  };
+
+  const handleUpdateUserRole = async (targetUserId: string, role: UserRole) => {
+    if (authProfile?.role !== 'admin') {
+      throw new Error('Apenas administradores podem alterar papel de usuário.');
+    }
+
+    try {
+      await updateUserRole(targetUserId, role);
+      await loadManagedUsers();
+    } catch (error) {
+      throw new Error(toAdminUsersErrorMessage(error));
+    }
+  };
+
+  const handleRejectUser = async (targetUserId: string) => {
+    if (authProfile?.role !== 'admin') {
+      throw new Error('Apenas administradores podem rejeitar usuários.');
+    }
+
+    try {
+      await rejectAndRemoveUser(targetUserId);
+      await loadManagedUsers();
+    } catch (error) {
+      throw new Error(toAdminUsersErrorMessage(error));
+    }
+  };
 
   const handleCreateEmitter = async (payload: UpsertEmitterInput): Promise<Emitter> => {
     if (!session?.user?.id) {
@@ -375,6 +495,16 @@ export default function App() {
     return <AuthLoadingScreen />;
   }
 
+  if (authStatus === 'pending_approval' && session?.user) {
+    return (
+      <PendingApprovalScreen
+        email={session.user.email ?? 'Usuário sem e-mail'}
+        isSigningOut={isSigningOut}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
   if (authStatus !== 'authenticated' || !session?.user) {
     return (
       <AuthScreen
@@ -401,6 +531,8 @@ export default function App() {
         return 'Histórico';
       case 'issuer':
         return 'Configurações do Emissor';
+      case 'users':
+        return 'Gestão de Usuários';
       default:
         return 'App';
     }
@@ -437,12 +569,7 @@ export default function App() {
             onDeleteCustomer={handleDeleteCustomer}
           />
         )}
-        {activeTab === 'history' && (
-          <HistoryScreen
-            history={history}
-            emitters={emitters}
-          />
-        )}
+        {activeTab === 'history' && <HistoryScreen history={history} emitters={emitters} />}
         {activeTab === 'issuer' && (
           <IssuerScreen
             emitters={emitters}
@@ -453,9 +580,21 @@ export default function App() {
             onDeleteEmitter={handleDeleteEmitter}
           />
         )}
+        {activeTab === 'users' && authProfile.role === 'admin' && (
+          <UsersScreen
+            currentUserId={session.user.id}
+            users={managedUsers}
+            isLoading={isManagedUsersLoading}
+            loadError={managedUsersError}
+            onRefresh={loadManagedUsers}
+            onApproveUser={handleApproveUser}
+            onUpdateUserRole={handleUpdateUserRole}
+            onRejectUser={handleRejectUser}
+          />
+        )}
       </div>
 
-      <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onChange={setActiveTab} isAdmin={authProfile.role === 'admin'} />
     </div>
   );
 }

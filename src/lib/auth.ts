@@ -11,7 +11,14 @@ interface SignUpResult {
   requiresEmailConfirmation: boolean;
 }
 
-const PROFILE_COLUMNS = 'id, role';
+interface ProfileRow {
+  id: string;
+  email: string | null;
+  role: 'admin' | 'user';
+  approval_status: 'pending' | 'approved';
+}
+
+const PROFILE_COLUMNS = 'id, email, role, approval_status';
 const profilesTable = () => supabase.schema('public').from('profiles');
 
 function normalizeProfile(data: unknown): UserProfile {
@@ -21,18 +28,32 @@ function normalizeProfile(data: unknown): UserProfile {
 
   const maybeProfile = data as Record<string, unknown>;
   const role = maybeProfile.role;
+  const approvalStatus = maybeProfile.approval_status;
+  const email = maybeProfile.email;
 
   if (role !== 'admin' && role !== 'user') {
     throw new Error('Invalid user role in profiles table.');
+  }
+
+  if (approvalStatus !== 'pending' && approvalStatus !== 'approved') {
+    throw new Error('Invalid approval status in profiles table.');
+  }
+
+  if (email !== null && typeof email !== 'string') {
+    throw new Error('Invalid profile e-mail in profiles table.');
   }
 
   if (typeof maybeProfile.id !== 'string') {
     throw new Error('Invalid profile id in profiles table.');
   }
 
+  const normalizedEmail: string | null = email === null ? null : (email as string);
+
   return {
     id: maybeProfile.id,
+    email: normalizedEmail,
     role,
+    approvalStatus,
   };
 }
 
@@ -53,15 +74,15 @@ async function getProfileById(userId: string): Promise<UserProfile | null> {
   return normalizeProfile(data);
 }
 
-async function createProfile(userId: string): Promise<UserProfile> {
+async function createFallbackProfile(user: User): Promise<UserProfile> {
   const { data, error } = await profilesTable()
-    .insert({ id: userId })
+    .insert({ id: user.id, email: user.email ?? null })
     .select(PROFILE_COLUMNS)
     .single();
 
   if (error) {
     if (error.code === '23505') {
-      const existing = await getProfileById(userId);
+      const existing = await getProfileById(user.id);
       if (existing) {
         return existing;
       }
@@ -69,7 +90,7 @@ async function createProfile(userId: string): Promise<UserProfile> {
     throw error;
   }
 
-  return normalizeProfile(data);
+  return normalizeProfile(data as ProfileRow);
 }
 
 export async function ensureUserProfile(user: User): Promise<UserProfile> {
@@ -78,7 +99,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
     return existing;
   }
 
-  return createProfile(user.id);
+  return createFallbackProfile(user);
 }
 
 export async function signInWithPassword(credentials: AuthCredentials): Promise<void> {
@@ -98,35 +119,17 @@ export async function signUpWithPassword(credentials: AuthCredentials): Promise<
     throw error;
   }
 
-  const user = data.user;
-  const session = data.session;
-
-  if (user && session) {
-    await ensureUserProfile(user);
+  if (data.user && data.session) {
+    await ensureUserProfile(data.user);
   }
 
   return {
-    requiresEmailConfirmation: Boolean(user) && !session,
+    requiresEmailConfirmation: Boolean(data.user) && !data.session,
   };
 }
 
 export async function signOutCurrentUser(): Promise<void> {
   const { error } = await supabase.auth.signOut();
-  if (error) {
-    throw error;
-  }
-}
-
-export async function promoteUserToAdmin(currentUserId: string, targetUserId: string): Promise<void> {
-  const currentUserProfile = await getProfileById(currentUserId);
-  if (!currentUserProfile || currentUserProfile.role !== 'admin') {
-    throw new Error('Only admin users can promote other users.');
-  }
-
-  const { error } = await profilesTable()
-    .update({ role: 'admin' })
-    .eq('id', targetUserId);
-
   if (error) {
     throw error;
   }

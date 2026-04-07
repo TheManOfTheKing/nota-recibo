@@ -44,7 +44,7 @@ export function AuthScreen({
             {mode === 'login' ? 'Acesse sua conta' : 'Crie sua conta'}
           </h1>
           <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Login seguro com Supabase Auth e controle de perfil <strong>admin/user</strong>.
+            Cadastro com aprovação de administrador e controle de perfil <strong>admin/user</strong>.
           </p>
         </header>
 
@@ -100,7 +100,7 @@ export function AuthScreen({
             <Shield className="h-4 w-4 text-primary" />
             Regras de acesso
           </div>
-          Somente usuários com perfil <strong>admin</strong> poderão promover outros usuários para admin no futuro.
+          Novas contas entram como <strong>pendentes</strong> e só acessam o app após aprovação de um <strong>admin</strong>.
         </footer>
       </section>
     </main>

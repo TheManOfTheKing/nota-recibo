@@ -21,26 +21,33 @@ Use sempre:
 
 Não usar `service_role` no frontend.
 
-## 3) Tabela `public.profiles` e papel de usuário
+## 3) Tabela `public.profiles`, aprovação e papel de usuário
 
 O schema define:
 
 - `id uuid` (PK, referência para `auth.users.id`)
+- `email text`
 - `role` com valores permitidos: `admin | user`
+- `approval_status` com valores permitidos: `pending | approved`
+- `approved_at`, `approved_by`
 - `created_at`, `updated_at`
 
 Regras esperadas:
 
+- Novo cadastro entra como `role = user` e `approval_status = pending`.
+- Somente `approval_status = approved` pode acessar o app.
 - O papel exibido na UI deve vir de `public.profiles.role`.
-- O primeiro perfil cadastrado vira `admin`.
-- Usuários seguintes viram `user` por padrão.
-- Apenas `admin` pode promover outro usuário para `admin`.
+- Apenas `admin` aprovado pode aprovar contas, promover/rebaixar papéis e remover contas.
 
 No schema atual isso é reforçado por:
 
 - RLS na tabela `profiles`
 - função `public.current_user_is_admin()`
-- trigger `set_profile_role_on_insert` com função `public.handle_profile_role_on_insert()`
+- trigger em `auth.users` para criar profile pendente (`public.handle_auth_user_created()`)
+- RPCs:
+  - `public.admin_approve_user(target_user_id, target_role)`
+  - `public.admin_update_user_role(target_user_id, target_role)`
+  - `public.admin_reject_and_remove_user(target_user_id)`
 
 Se o banco ja foi provisionado e voce receber erro como:
 `relation "profiles" already exists`,
@@ -50,14 +57,15 @@ nao execute o bootstrap completo novamente. Execute apenas `supabase_profiles_up
 
 1. `signIn` / `signUp` via Supabase Auth.
 2. Após autenticar, garantir perfil em `public.profiles` com `id = auth.user.id`.
-3. Ler `role` da tabela `profiles`.
-4. Renderizar navegação/status conforme sessão e papel.
-5. Em `signOut`, limpar estado local e voltar para a tela de login.
+3. Ler `approval_status` e `role` da tabela `profiles`.
+4. Se `approval_status = pending`, mostrar tela de aguardo e bloquear acesso ao app.
+5. Se `approval_status = approved`, renderizar navegação/status conforme sessão e papel.
+6. Em `signOut`, limpar estado local e voltar para a tela de login.
 
 ## 5) Boas práticas para agentes
 
-- Sempre consultar `public.profiles` para autorização de papel.
-- Evitar lógica de contagem no frontend para decidir `admin/user`; a definição final deve ficar protegida no banco.
+- Sempre consultar `public.profiles` para autorização de papel e aprovação.
+- Evitar decisões de autorização no frontend; regras finais devem ficar protegidas no banco (RLS/RPC).
 - Manter componentes acessíveis (labels, contraste, foco visível, botões com área de toque adequada).
 - Em telas protegidas, redirecionar para login quando não houver sessão.
 
@@ -129,3 +137,18 @@ Esse script:
 - adiciona constraints de integridade
 - garante `due_date` obrigatoria para `promissory_note`
 - recria policies RLS da tabela `documents`
+
+## 11) Controle de contas (aprovação + admin)
+
+Para ambientes existentes, execute:
+
+- `supabase_profiles_upgrade.sql`
+
+Esse script:
+
+- adiciona e normaliza colunas de aprovação em `profiles`
+- marca usuários já existentes como `approved` (para não bloquear uso atual)
+- cria trigger em `auth.users` para novos cadastros iniciarem como `pending`
+- remove promoção automática por "primeiro usuário"
+- cria RPCs de aprovação, alteração de papel e remoção de conta
+- aplica guardrails para impedir auto-remoção e remoção/rebaixamento do último admin aprovado
