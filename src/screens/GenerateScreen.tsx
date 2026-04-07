@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Customer, IssuerProfile, DocumentRecord } from '../types';
+import { Customer, Emitter, DocumentRecord } from '../types';
 import { Search, Calendar, History, Verified, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -8,12 +8,12 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface GenerateScreenProps {
   customers: Customer[];
-  profiles: IssuerProfile[];
+  emitters: Emitter[];
   onSaveDocument: (doc: DocumentRecord) => void;
   onGoToHistory: () => void;
 }
 
-export function GenerateScreen({ customers, profiles, onSaveDocument, onGoToHistory }: GenerateScreenProps) {
+export function GenerateScreen({ customers, emitters, onSaveDocument, onGoToHistory }: GenerateScreenProps) {
   const [docType, setDocType] = useState<'receipt' | 'promissory_note'>('receipt');
   const [amount, setAmount] = useState('');
   const [clientSearch, setClientSearch] = useState('');
@@ -22,7 +22,7 @@ export function GenerateScreen({ customers, profiles, onSaveDocument, onGoToHist
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   
-  const defaultProfile = profiles.find(p => p.isDefault) || profiles[0];
+  const defaultEmitter = emitters[0];
 
   const handleClientSearch = (val: string) => {
     setClientSearch(val);
@@ -36,7 +36,7 @@ export function GenerateScreen({ customers, profiles, onSaveDocument, onGoToHist
   };
 
   const handleGenerate = async () => {
-    if (!defaultProfile) {
+    if (!defaultEmitter) {
       alert('Por favor, configure os dados do emissor primeiro na aba "Emissor".');
       return;
     }
@@ -62,11 +62,11 @@ export function GenerateScreen({ customers, profiles, onSaveDocument, onGoToHist
       dueDate: docType === 'promissory_note' ? format(new Date(dueDate), 'dd/MM/yyyy') : undefined,
       description,
       status: docType === 'receipt' ? 'PAGO' : 'EMITIDO',
-      issuerId: defaultProfile.id
+      issuerId: defaultEmitter.id
     };
 
     // Generate PDF
-    await generatePDF(doc, defaultProfile);
+    await generatePDF(doc, defaultEmitter);
     
     // Save to history
     onSaveDocument(doc);

@@ -16,7 +16,15 @@ import {
   signUpWithPassword,
   toAuthErrorMessage,
 } from './lib/auth';
-import type { UserProfile } from './types';
+import {
+  createEmitter,
+  deleteEmitter,
+  listEmitters,
+  toEmitterErrorMessage,
+  updateEmitter,
+  type UpsertEmitterInput,
+} from './lib/emitters';
+import type { Emitter, UserProfile } from './types';
 
 function AuthLoadingScreen() {
   return (
@@ -58,15 +66,15 @@ export default function App() {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authInfo, setAuthInfo] = useState<string | null>(null);
+  const [emitters, setEmitters] = useState<Emitter[]>([]);
+  const [isEmittersLoading, setIsEmittersLoading] = useState(false);
+  const [emittersError, setEmittersError] = useState<string | null>(null);
 
   const {
     activeTab,
     setActiveTab,
     customers,
     addCustomer,
-    profiles,
-    addProfile,
-    updateProfile,
     history,
     addDocument,
   } = useAppStore();
@@ -77,6 +85,8 @@ export default function App() {
     if (!nextSession?.user) {
       setAuthStatus('unauthenticated');
       setAuthProfile(null);
+      setEmitters([]);
+      setEmittersError(null);
       setIsAuthLoading(false);
       return;
     }
@@ -169,11 +179,66 @@ export default function App() {
       await signOutCurrentUser();
       setActiveTab('generate');
       setAuthInfo(null);
+      setEmitters([]);
+      setEmittersError(null);
     } catch (error) {
       setAuthError(toAuthErrorMessage(error));
     } finally {
       setIsSigningOut(false);
     }
+  };
+
+  const loadEmitters = useCallback(async (userId: string) => {
+    setIsEmittersLoading(true);
+    setEmittersError(null);
+    try {
+      const rows = await listEmitters(userId);
+      setEmitters(rows);
+    } catch (error) {
+      setEmittersError(toEmitterErrorMessage(error));
+    } finally {
+      setIsEmittersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !session?.user?.id) {
+      setEmitters([]);
+      setEmittersError(null);
+      setIsEmittersLoading(false);
+      return;
+    }
+
+    void loadEmitters(session.user.id);
+  }, [authStatus, loadEmitters, session?.user?.id]);
+
+  const handleCreateEmitter = async (payload: UpsertEmitterInput): Promise<Emitter> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const created = await createEmitter(session.user.id, payload);
+    setEmitters((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
+    return created;
+  };
+
+  const handleUpdateEmitter = async (emitterId: string, payload: UpsertEmitterInput): Promise<Emitter> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const updated = await updateEmitter(session.user.id, emitterId, payload);
+    setEmitters((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    return updated;
+  };
+
+  const handleDeleteEmitter = async (emitter: Emitter): Promise<void> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    await deleteEmitter(session.user.id, emitter);
+    setEmitters((prev) => prev.filter((item) => item.id !== emitter.id));
   };
 
   if (isAuthLoading || authStatus === 'loading') {
@@ -226,7 +291,7 @@ export default function App() {
         {activeTab === 'generate' && (
           <GenerateScreen
             customers={customers}
-            profiles={profiles}
+            emitters={emitters}
             onSaveDocument={addDocument}
             onGoToHistory={() => setActiveTab('history')}
           />
@@ -240,20 +305,17 @@ export default function App() {
         {activeTab === 'history' && (
           <HistoryScreen
             history={history}
-            profiles={profiles}
+            emitters={emitters}
           />
         )}
         {activeTab === 'issuer' && (
           <IssuerScreen
-            profiles={profiles}
-            onSaveProfile={(profile) => {
-              const exists = profiles.find((existing) => existing.id === profile.id);
-              if (exists) {
-                updateProfile(profile);
-              } else {
-                addProfile(profile);
-              }
-            }}
+            emitters={emitters}
+            isLoading={isEmittersLoading}
+            loadError={emittersError}
+            onCreateEmitter={handleCreateEmitter}
+            onUpdateEmitter={handleUpdateEmitter}
+            onDeleteEmitter={handleDeleteEmitter}
           />
         )}
       </div>

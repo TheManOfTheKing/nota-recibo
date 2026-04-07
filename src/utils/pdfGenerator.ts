@@ -1,8 +1,8 @@
 import { jsPDF } from 'jspdf';
-import { DocumentRecord, IssuerProfile } from '../types';
+import { DocumentRecord, Emitter } from '../types';
 import { numeroPorExtenso } from './numberToWords';
 
-export const generatePDF = async (docRecord: DocumentRecord, issuer: IssuerProfile) => {
+export const generatePDF = async (docRecord: DocumentRecord, issuer: Emitter) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -34,7 +34,7 @@ export const generatePDF = async (docRecord: DocumentRecord, issuer: IssuerProfi
 
   // Header
   centerText(issuer.name.toUpperCase(), 25, 16, true);
-  centerText(`CNPJ/CPF: ${issuer.document}`, 32, 10);
+  centerText(`CNPJ/CPF: ${issuer.cnpjCpf}`, 32, 10);
   centerText(issuer.address, 38, 10);
   
   doc.line(10, 45, pageWidth - 10, 45);
@@ -68,7 +68,7 @@ export const generatePDF = async (docRecord: DocumentRecord, issuer: IssuerProfi
     // Signature
     doc.line(pageWidth / 2 - 40, 200, pageWidth / 2 + 40, 200);
     centerText(issuer.name, 208, 12);
-    centerText(`CNPJ/CPF: ${issuer.document}`, 215, 10);
+    centerText(`CNPJ/CPF: ${issuer.cnpjCpf}`, 215, 10);
 
   } else {
     // Promissory Note Title

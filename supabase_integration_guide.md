@@ -58,3 +58,13 @@ nao execute o bootstrap completo novamente. Execute apenas `supabase_profiles_up
 - Evitar lógica de contagem no frontend para decidir `admin/user`; a definição final deve ficar protegida no banco.
 - Manter componentes acessíveis (labels, contraste, foco visível, botões com área de toque adequada).
 - Em telas protegidas, redirecionar para login quando não houver sessão.
+
+## 6) Emissores (`public.emitters`) e logotipos
+
+- CRUD de emissores deve usar a tabela `public.emitters` com `user_id = auth.uid()`.
+- Para logotipos, usar Supabase Storage com bucket `emitters-logos`.
+- Fluxo recomendado:
+1. Criar/atualizar registro de emissor.
+2. Fazer upload do arquivo no Storage.
+3. Salvar `logo_url` pública na tabela `emitters`.
+- Se o bucket ainda não existir, criar no painel do Supabase e configurar políticas para usuários autenticados.

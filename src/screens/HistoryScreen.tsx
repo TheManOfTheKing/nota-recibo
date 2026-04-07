@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { DocumentRecord, IssuerProfile } from '../types';
+import { DocumentRecord, Emitter } from '../types';
 import { Search, SlidersHorizontal, Download } from 'lucide-react';
 import { generatePDF } from '../utils/pdfGenerator';
 
 interface HistoryScreenProps {
   history: DocumentRecord[];
-  profiles: IssuerProfile[];
+  emitters: Emitter[];
 }
 
-export function HistoryScreen({ history, profiles }: HistoryScreenProps) {
+export function HistoryScreen({ history, emitters }: HistoryScreenProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredHistory = history.filter(doc => 
@@ -16,7 +16,7 @@ export function HistoryScreen({ history, profiles }: HistoryScreenProps) {
   );
 
   const handleDownload = (doc: DocumentRecord) => {
-    const issuer = profiles.find(p => p.id === doc.issuerId) || profiles[0];
+    const issuer = emitters.find((emitter) => emitter.id === doc.issuerId) ?? emitters[0];
     if (issuer) {
       generatePDF(doc, issuer);
     } else {

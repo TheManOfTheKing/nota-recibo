@@ -7,13 +7,15 @@ export interface Customer {
   createdAt: string;
 }
 
-export interface IssuerProfile {
+export interface Emitter {
   id: string;
+  userId: string;
   name: string;
-  document: string;
+  cnpjCpf: string;
   address: string;
-  logoUrl?: string;
-  isDefault: boolean;
+  logoUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DocumentRecord {
