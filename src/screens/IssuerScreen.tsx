@@ -209,7 +209,11 @@ export function IssuerScreen({
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-32 pt-24 sm:px-6">
       {loadError && (
-        <div className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300">
+        <div
+          className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300"
+          role="alert"
+          aria-live="assertive"
+        >
           {loadError}
         </div>
       )}

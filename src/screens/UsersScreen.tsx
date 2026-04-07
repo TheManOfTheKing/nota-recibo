@@ -32,7 +32,7 @@ function roleBadgeClass(role: UserRole): string {
   if (role === 'admin') {
     return 'border border-blue-400/60 bg-blue-950/40 text-blue-300';
   }
-  return 'border border-zinc-600 bg-zinc-900 text-zinc-200';
+  return 'border border-outline bg-surface-container-highest text-on-surface';
 }
 
 function statusBadgeClass(status: ManagedUser['approvalStatus']): string {
@@ -140,7 +140,7 @@ export function UsersScreen({
           <button
             type="button"
             onClick={() => void onRefresh()}
-            className="inline-flex h-12 items-center gap-2 rounded-xl border border-outline px-4 text-sm font-bold text-on-surface hover:bg-surface-container-high"
+            className="inline-flex h-12 items-center gap-2 rounded-xl border border-outline bg-surface-container-high px-4 text-sm font-bold text-on-surface hover:bg-surface-container-highest"
             aria-label="Atualizar lista de usuários"
           >
             <RefreshCw className="h-4 w-4" />
@@ -165,7 +165,11 @@ export function UsersScreen({
       </section>
 
       {loadError && (
-        <div className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300">
+        <div
+          className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300"
+          role="alert"
+          aria-live="assertive"
+        >
           {loadError}
         </div>
       )}
@@ -202,13 +206,13 @@ export function UsersScreen({
                   <p className="truncate text-sm font-bold text-on-surface">{user.email ?? user.id}</p>
                   <p className="mt-1 text-xs text-on-surface-variant">Criado em: {formatDateTime(user.createdAt)}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${statusBadgeClass(user.approvalStatus)}`}>
+                    <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${statusBadgeClass(user.approvalStatus)}`}>
                       {user.approvalStatus}
                     </span>
                     <select
                       value={getSelection(user)}
                       onChange={(event) => updateSelection(user.id, event.target.value as UserRole)}
-                      className="h-10 rounded-lg border border-outline bg-background px-3 text-sm font-semibold text-on-surface"
+                      className="h-11 rounded-lg border border-outline bg-background px-3 text-sm font-semibold text-on-surface"
                       aria-label={`Papel para ${user.email ?? user.id}`}
                     >
                       <option value="user">user</option>
@@ -218,7 +222,8 @@ export function UsersScreen({
                       type="button"
                       onClick={() => void handleApprove(user)}
                       disabled={isSubmittingFor === user.id}
-                      className="inline-flex h-10 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:opacity-70"
+                      className="inline-flex h-11 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:opacity-70"
+                      aria-label={`Aprovar usuário ${user.email ?? user.id}`}
                     >
                       <UserCheck className="h-4 w-4" />
                       Aprovar
@@ -227,7 +232,8 @@ export function UsersScreen({
                       type="button"
                       onClick={() => void handleReject(user)}
                       disabled={isSubmittingFor === user.id || user.id === currentUserId}
-                      className="inline-flex h-10 items-center gap-1 rounded-lg bg-red-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-11 items-center gap-1 rounded-lg bg-red-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`Rejeitar e remover usuário ${user.email ?? user.id}`}
                     >
                       <UserX className="h-4 w-4" />
                       Rejeitar
@@ -256,16 +262,16 @@ export function UsersScreen({
                   <p className="truncate text-sm font-bold text-on-surface">{user.email ?? user.id}</p>
                   <p className="mt-1 text-xs text-on-surface-variant">Aprovado em: {formatDateTime(user.approvedAt)}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${statusBadgeClass(user.approvalStatus)}`}>
+                    <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${statusBadgeClass(user.approvalStatus)}`}>
                       {user.approvalStatus}
                     </span>
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${roleBadgeClass(user.role)}`}>
+                    <span className={`rounded-full px-2 py-1 text-xs font-bold uppercase ${roleBadgeClass(user.role)}`}>
                       {user.role}
                     </span>
                     <select
                       value={getSelection(user)}
                       onChange={(event) => updateSelection(user.id, event.target.value as UserRole)}
-                      className="h-10 rounded-lg border border-outline bg-background px-3 text-sm font-semibold text-on-surface"
+                      className="h-11 rounded-lg border border-outline bg-background px-3 text-sm font-semibold text-on-surface"
                       aria-label={`Alterar papel de ${user.email ?? user.id}`}
                     >
                       <option value="user">user</option>
@@ -275,7 +281,8 @@ export function UsersScreen({
                       type="button"
                       onClick={() => void handleUpdateRole(user)}
                       disabled={isSubmittingFor === user.id}
-                      className="inline-flex h-10 items-center rounded-lg bg-blue-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:opacity-70"
+                      className="inline-flex h-11 items-center rounded-lg bg-blue-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:opacity-70"
+                      aria-label={`Atualizar papel do usuário ${user.email ?? user.id}`}
                     >
                       Atualizar papel
                     </button>
@@ -283,7 +290,8 @@ export function UsersScreen({
                       type="button"
                       onClick={() => void handleReject(user)}
                       disabled={isSubmittingFor === user.id || user.id === currentUserId}
-                      className="inline-flex h-10 items-center gap-1 rounded-lg bg-red-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-11 items-center gap-1 rounded-lg bg-red-700 px-3 text-xs font-bold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`Remover usuário ${user.email ?? user.id}`}
                     >
                       <UserX className="h-4 w-4" />
                       Remover

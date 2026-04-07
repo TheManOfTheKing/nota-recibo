@@ -60,6 +60,7 @@ export function EmitterForm({
             required
             value={values.name}
             onChange={(event) => onChange({ ...values, name: event.target.value })}
+            aria-label="Nome ou razão social do emissor"
             className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="Ex: Tech Solutions Ltda"
           />
@@ -75,6 +76,7 @@ export function EmitterForm({
             required
             value={values.cnpjCpf}
             onChange={(event) => onChange({ ...values, cnpjCpf: event.target.value })}
+            aria-label="CNPJ ou CPF do emissor"
             className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="00.000.000/0000-00"
           />
@@ -90,6 +92,7 @@ export function EmitterForm({
             value={values.address}
             onChange={(event) => onChange({ ...values, address: event.target.value })}
             rows={3}
+            aria-label="Endereço completo do emissor"
             className="w-full rounded-xl border border-outline bg-surface-container-highest p-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="Rua, número, bairro, cidade - UF"
           />
@@ -102,6 +105,7 @@ export function EmitterForm({
             type="file"
             accept="image/png,image/jpeg,image/svg+xml,image/webp"
             className="hidden"
+            aria-label="Selecionar arquivo de logotipo do emissor"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (!file) {
@@ -126,7 +130,8 @@ export function EmitterForm({
                   <button
                     type="button"
                     onClick={() => logoInputRef.current?.click()}
-                    className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-surface-container-highest text-sm font-bold text-on-surface hover:bg-surface-bright"
+                    className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-surface-container-highest text-sm font-bold text-on-surface hover:bg-surface-bright"
+                    aria-label="Trocar logotipo do emissor"
                   >
                     <ImagePlus className="h-4 w-4" />
                     Trocar
@@ -134,7 +139,8 @@ export function EmitterForm({
                   <button
                     type="button"
                     onClick={onRemoveLogo}
-                    className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-red-600/90 text-sm font-bold text-white hover:bg-red-500"
+                    className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-red-600/90 text-sm font-bold text-white hover:bg-red-500"
+                    aria-label="Remover logotipo do emissor"
                   >
                     <Trash2 className="h-4 w-4" />
                     Remover
@@ -146,6 +152,7 @@ export function EmitterForm({
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
                 className="inline-flex h-24 w-full flex-col items-center justify-center rounded-lg bg-surface-container-highest text-on-surface-variant hover:text-primary"
+                aria-label="Selecionar logotipo do emissor"
               >
                 <ImagePlus className="mb-2 h-6 w-6" />
                 <span className="text-sm font-bold">Selecionar logotipo (até 2MB)</span>
@@ -161,6 +168,8 @@ export function EmitterForm({
                 ? 'border border-emerald-500/60 bg-emerald-950/40 text-emerald-300'
                 : 'border border-red-500/60 bg-red-950/40 text-red-300'
             }`}
+            role="status"
+            aria-live="polite"
           >
             {feedbackMessage}
           </div>
@@ -170,6 +179,7 @@ export function EmitterForm({
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-label={mode === 'create' ? 'Cadastrar emissor' : 'Salvar alterações do emissor'}
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl primary-gradient font-headline text-base font-black text-on-primary disabled:cursor-not-allowed disabled:opacity-70"
           >
             <Save className="h-5 w-5" />
@@ -178,6 +188,7 @@ export function EmitterForm({
           <button
             type="button"
             onClick={onCancel}
+            aria-label="Cancelar edição do emissor"
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-outline bg-surface-container-high text-base font-bold text-on-surface hover:bg-surface-container-highest"
           >
             <X className="h-5 w-5" />

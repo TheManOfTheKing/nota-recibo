@@ -25,7 +25,8 @@ export function EmittersList({
         <button
           type="button"
           onClick={onCreateNew}
-          className="rounded-lg border border-outline bg-surface-container-high px-3 py-2 text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest"
+          aria-label="Criar novo emissor"
+          className="min-h-11 rounded-lg border border-outline bg-surface-container-high px-3 py-2 text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest"
         >
           Novo
         </button>
@@ -73,17 +74,17 @@ export function EmittersList({
                     <button
                       type="button"
                       onClick={() => onSelectEmitter(emitter)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-highest text-on-surface hover:text-primary"
-                      aria-label={`Editar emissor ${emitter.name}`}
-                    >
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-highest text-on-surface hover:text-primary"
+                    aria-label={`Editar emissor ${emitter.name}`}
+                  >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => onDeleteEmitter(emitter)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800"
-                      aria-label={`Excluir emissor ${emitter.name}`}
-                    >
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800"
+                    aria-label={`Excluir emissor ${emitter.name}`}
+                  >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

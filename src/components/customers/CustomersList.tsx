@@ -29,7 +29,8 @@ export function CustomersList({
         <button
           type="button"
           onClick={onCreateNew}
-          className="rounded-lg border border-outline bg-surface-container-high px-3 py-2 text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest"
+          aria-label="Criar novo cliente"
+          className="min-h-11 rounded-lg border border-outline bg-surface-container-high px-3 py-2 text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-highest"
         >
           Novo
         </button>
@@ -44,8 +45,9 @@ export function CustomersList({
           type="text"
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
+          aria-label="Buscar clientes por nome ou CPF CNPJ"
           placeholder="Digite para filtrar..."
-          className="h-11 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-sm font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+          className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
         />
       </div>
 
@@ -92,17 +94,17 @@ export function CustomersList({
                     <button
                       type="button"
                       onClick={() => onSelectCustomer(customer)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-highest text-on-surface hover:text-primary"
-                      aria-label={`Editar cliente ${customer.name}`}
-                    >
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-highest text-on-surface hover:text-primary"
+                    aria-label={`Editar cliente ${customer.name}`}
+                  >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => onDeleteCustomer(customer)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800"
-                      aria-label={`Excluir cliente ${customer.name}`}
-                    >
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-red-900/50 text-red-300 hover:bg-red-800"
+                    aria-label={`Excluir cliente ${customer.name}`}
+                  >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>

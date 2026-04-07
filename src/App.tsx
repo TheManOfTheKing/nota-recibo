@@ -52,7 +52,7 @@ import type { Customer, DocumentRecord, Emitter, ManagedUser, UserProfile, UserR
 function AuthLoadingScreen() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-on-background">
-      <div className="rounded-2xl border border-outline-variant bg-surface-container px-6 py-5 text-center">
+      <div className="rounded-2xl border border-outline-variant bg-surface-container px-6 py-5 text-center" role="status" aria-live="polite">
         <p className="text-sm font-bold tracking-widest text-on-surface-variant">AUTENTICANDO</p>
         <p className="mt-2 text-base font-medium text-on-surface">Carregando sua sessão...</p>
       </div>
@@ -65,7 +65,7 @@ function MissingProfileScreen({ onSignOut }: { onSignOut: () => Promise<void> })
     <main className="flex min-h-screen items-center justify-center bg-background px-6 text-on-background">
       <div className="max-w-md rounded-2xl border border-red-500/40 bg-surface-container p-6">
         <h2 className="text-xl font-bold">Falha ao carregar perfil</h2>
-        <p className="mt-2 text-sm text-on-surface-variant">
+        <p className="mt-2 text-sm text-on-surface-variant" role="alert">
           Não foi possível carregar seu perfil no Supabase. Verifique se a tabela <code>profiles</code> existe com as colunas{' '}
           <code>id</code>, <code>email</code>, <code>role</code> e <code>approval_status</code>.
         </p>
@@ -95,7 +95,7 @@ function PendingApprovalScreen({
       <section className="w-full max-w-md rounded-2xl border border-amber-500/50 bg-surface-container p-6">
         <p className="text-xs font-extrabold uppercase tracking-widest text-amber-300">Aguardando aprovação</p>
         <h1 className="mt-2 text-2xl font-black text-on-surface">Conta criada com sucesso</h1>
-        <p className="mt-3 text-sm text-on-surface-variant">
+        <p className="mt-3 text-sm text-on-surface-variant" role="status" aria-live="polite">
           A conta <strong>{email}</strong> está pendente de aprovação por um administrador.
         </p>
         <p className="mt-2 text-sm text-on-surface-variant">
@@ -105,7 +105,7 @@ function PendingApprovalScreen({
           type="button"
           onClick={() => void onSignOut()}
           disabled={isSigningOut}
-          className="mt-6 h-12 w-full rounded-xl bg-zinc-900 px-4 text-sm font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
+          className="mt-6 h-12 w-full rounded-xl bg-primary px-4 text-sm font-bold text-on-primary transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSigningOut ? 'Saindo...' : 'Sair da conta'}
         </button>

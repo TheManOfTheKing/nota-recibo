@@ -112,13 +112,17 @@ export function HistoryScreen({ documents, isLoading, loadError, onRefresh }: Hi
             placeholder="Buscar por cliente, tipo ou descrição..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="h-12 w-full border-none bg-transparent text-sm font-medium text-on-surface placeholder:text-outline focus:ring-0"
+            className="h-12 w-full border-none bg-transparent text-base font-medium text-on-surface placeholder:text-outline focus:ring-0"
           />
         </div>
       </div>
 
       {loadError && (
-        <div className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300">
+        <div
+          className="mb-4 rounded-xl border border-red-500/60 bg-red-950/50 px-4 py-3 text-sm font-semibold text-red-300"
+          role="alert"
+          aria-live="assertive"
+        >
           {loadError}
         </div>
       )}
@@ -137,27 +141,30 @@ export function HistoryScreen({ documents, isLoading, loadError, onRefresh }: Hi
             <article
               key={doc.id}
               className={`rounded-xl border-l-4 bg-surface-container-low p-5 shadow-sm ${
-                doc.type === 'receipt' ? 'border-primary/40' : 'border-on-tertiary-fixed-variant'
+                doc.type === 'receipt' ? 'border-primary/40' : 'border-secondary/60'
               }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-widest ${
-                      doc.type === 'receipt' ? 'text-primary-fixed-dim' : 'text-on-surface-variant'
+                    className={`text-xs font-bold uppercase tracking-widest ${
+                      doc.type === 'receipt' ? 'text-primary' : 'text-secondary'
                     }`}
                   >
                     Tipo: {getTypeLabel(doc.type)}
                   </span>
                   <h3 className="font-headline text-lg font-bold leading-tight text-on-surface">{doc.customerName}</h3>
                   <p className="text-xs font-medium text-on-surface-variant">Data: {doc.date}</p>
+                  {doc.type === 'promissory_note' && doc.dueDate && (
+                    <p className="text-xs font-semibold text-on-surface-variant">Vencimento: {doc.dueDate}</p>
+                  )}
                 </div>
 
                 <div className="text-right">
                   <p className={`font-headline text-xl font-black ${doc.type === 'receipt' ? 'text-primary' : 'text-on-surface'}`}>
                     R$ {doc.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <span className="inline-flex rounded-full bg-surface-container-highest px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-tertiary">
+                  <span className="inline-flex rounded-full bg-surface-container-highest px-3 py-1 text-xs font-bold uppercase tracking-wider text-on-surface">
                     {getStatusLabel(doc.status)}
                   </span>
                 </div>
@@ -172,7 +179,7 @@ export function HistoryScreen({ documents, isLoading, loadError, onRefresh }: Hi
                   type="button"
                   onClick={() => handleViewPdf(doc)}
                   disabled={!doc.pdfUrl}
-                  className="inline-flex h-11 items-center gap-2 rounded-lg bg-secondary-container px-4 text-xs font-bold uppercase tracking-wider text-on-secondary-container hover:bg-secondary-dim disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center gap-2 rounded-lg bg-secondary-container px-4 text-xs font-bold uppercase tracking-wider text-on-secondary-container hover:bg-secondary hover:text-on-secondary disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label={`Visualizar PDF de ${getTypeLabel(doc.type)} para ${doc.customerName}`}
                 >
                   <Eye className="h-4 w-4" />
@@ -183,7 +190,7 @@ export function HistoryScreen({ documents, isLoading, loadError, onRefresh }: Hi
                   type="button"
                   onClick={() => void handleDownloadPdf(doc)}
                   disabled={!doc.pdfUrl || isDownloadingId === doc.id}
-                  className="inline-flex h-11 items-center gap-2 rounded-lg bg-surface-container-highest px-4 text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-bright disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center gap-2 rounded-lg bg-surface-container-highest px-4 text-xs font-bold uppercase tracking-wider text-on-surface hover:bg-surface-bright disabled:cursor-not-allowed disabled:opacity-60"
                   aria-label={`Baixar PDF de ${getTypeLabel(doc.type)} para ${doc.customerName}`}
                 >
                   <Download className="h-4 w-4" />

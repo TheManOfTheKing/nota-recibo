@@ -56,6 +56,7 @@ export function CustomerForm({
             required
             value={values.name}
             onChange={(event) => onChange({ ...values, name: event.target.value })}
+            aria-label="Nome completo do cliente"
             className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="Ex: João da Silva"
           />
@@ -71,6 +72,7 @@ export function CustomerForm({
             required
             value={values.cpfCnpj}
             onChange={(event) => onChange({ ...values, cpfCnpj: event.target.value })}
+            aria-label="CPF ou CNPJ do cliente"
             className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="000.000.000-00"
           />
@@ -87,7 +89,8 @@ export function CustomerForm({
                   <button
                     type="button"
                     onClick={() => onUseSuggestion(customer)}
-                    className="flex w-full items-center justify-between rounded-lg bg-surface-container-highest px-3 py-2 text-left hover:bg-surface-container-high"
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg bg-surface-container-highest px-3 py-2 text-left hover:bg-surface-container-high"
+                    aria-label={`Usar cliente ${customer.name}`}
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-on-surface">{customer.name}</span>
@@ -111,6 +114,7 @@ export function CustomerForm({
             required
             value={values.phone}
             onChange={(event) => onChange({ ...values, phone: event.target.value })}
+            aria-label="Telefone do cliente"
             className="h-12 w-full rounded-xl border border-outline bg-surface-container-highest px-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="(11) 99999-9999"
           />
@@ -126,6 +130,7 @@ export function CustomerForm({
             value={values.address}
             onChange={(event) => onChange({ ...values, address: event.target.value })}
             rows={3}
+            aria-label="Endereço completo do cliente"
             className="w-full rounded-xl border border-outline bg-surface-container-highest p-4 text-base font-semibold text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             placeholder="Rua, número, complemento, bairro, cidade - UF"
           />
@@ -138,6 +143,8 @@ export function CustomerForm({
                 ? 'border border-emerald-500/60 bg-emerald-950/40 text-emerald-300'
                 : 'border border-red-500/60 bg-red-950/40 text-red-300'
             }`}
+            role="status"
+            aria-live="polite"
           >
             {feedbackMessage}
           </div>
@@ -147,6 +154,7 @@ export function CustomerForm({
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-label={mode === 'create' ? 'Cadastrar cliente' : 'Salvar alterações do cliente'}
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl primary-gradient font-headline text-base font-black text-on-primary disabled:cursor-not-allowed disabled:opacity-70"
           >
             {mode === 'create' ? <UserRound className="h-5 w-5" /> : <Save className="h-5 w-5" />}
@@ -155,6 +163,7 @@ export function CustomerForm({
           <button
             type="button"
             onClick={onCancel}
+            aria-label="Cancelar edição do cliente"
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-outline bg-surface-container-high text-base font-bold text-on-surface hover:bg-surface-container-highest"
           >
             <X className="h-5 w-5" />

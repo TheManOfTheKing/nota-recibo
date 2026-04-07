@@ -255,9 +255,10 @@ export function GenerateScreen({
           <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-surface-container-high p-2" role="tablist" aria-label="Tipo de documento">
             <button
               type="button"
+              id="tab-receipt"
               role="tab"
               aria-selected={documentType === 'receipt'}
-              aria-controls="document-form"
+              aria-controls="document-form-panel"
               onClick={() => setDocumentType('receipt')}
               className={`h-12 rounded-lg text-sm font-black uppercase tracking-wide transition-colors ${
                 documentType === 'receipt'
@@ -269,9 +270,10 @@ export function GenerateScreen({
             </button>
             <button
               type="button"
+              id="tab-promissory-note"
               role="tab"
               aria-selected={documentType === 'promissory_note'}
-              aria-controls="document-form"
+              aria-controls="document-form-panel"
               onClick={() => setDocumentType('promissory_note')}
               className={`h-12 rounded-lg text-sm font-black uppercase tracking-wide transition-colors ${
                 documentType === 'promissory_note'
@@ -284,7 +286,12 @@ export function GenerateScreen({
           </div>
         </div>
 
-        <div id="document-form" className="space-y-8">
+        <div
+          id="document-form-panel"
+          role="tabpanel"
+          aria-labelledby={isPromissory ? 'tab-promissory-note' : 'tab-receipt'}
+          className="space-y-8"
+        >
           <div className="flex flex-col gap-3">
             <label
               htmlFor="emitter-select"
@@ -314,6 +321,7 @@ export function GenerateScreen({
             </label>
             <div className="relative">
               <input
+                id="customer-search"
                 type="text"
                 value={clientSearch}
                 onChange={(event) => handleClientSearch(event.target.value)}
@@ -323,6 +331,9 @@ export function GenerateScreen({
                 placeholder="Buscar cliente cadastrado..."
                 aria-label="Buscar cliente por nome ou CPF/CNPJ"
                 aria-autocomplete="list"
+                aria-haspopup="listbox"
+                aria-expanded={showSuggestions && customerSuggestions.length > 0}
+                aria-controls="customer-suggestions-list"
               />
               <span
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-primary p-2 bg-surface-container-high rounded-lg"
@@ -333,13 +344,19 @@ export function GenerateScreen({
 
               {showSuggestions && customerSuggestions.length > 0 && (
                 <div className="absolute z-20 mt-2 w-full rounded-xl border border-outline-variant/30 bg-surface-container shadow-2xl">
-                  <ul className="max-h-56 overflow-auto py-2" role="listbox" aria-label="Sugestoes de clientes">
+                  <ul
+                    id="customer-suggestions-list"
+                    className="max-h-56 overflow-auto py-2"
+                    role="listbox"
+                    aria-label="Sugestoes de clientes"
+                  >
                     {customerSuggestions.map((customer) => (
                       <li key={customer.id}>
                         <button
                           type="button"
                           onClick={() => handleSelectSuggestedCustomer(customer)}
-                          className="w-full px-4 py-3 text-left hover:bg-surface-container-high"
+                          className="min-h-11 w-full px-4 py-3 text-left hover:bg-surface-container-high"
+                          aria-label={`Selecionar cliente ${customer.name}`}
                         >
                           <p className="truncate text-sm font-bold text-on-surface">{customer.name}</p>
                           <p className="truncate text-xs font-semibold text-on-surface-variant">{customer.cpfCnpj}</p>
@@ -360,12 +377,13 @@ export function GenerateScreen({
           <div className="flex flex-col gap-3">
             <label className="text-on-surface-variant font-label text-sm font-extrabold tracking-[0.05rem]">VALOR (R$)</label>
             <div className="bg-surface-container-highest rounded-xl p-4 flex items-center border border-outline">
-              <span className="text-primary-fixed text-2xl font-black mr-2">R$</span>
+              <span className="mr-2 text-2xl font-black text-primary">R$</span>
               <input
                 type="text"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
-                className="bg-transparent border-none w-full text-3xl font-lexend font-bold p-0 focus:ring-0 text-on-surface placeholder:text-surface-variant"
+                inputMode="decimal"
+                className="bg-transparent border-none w-full text-3xl font-lexend font-bold p-0 focus:ring-0 text-on-surface placeholder:text-on-surface-variant"
                 placeholder="0,00"
                 aria-label="Valor do documento"
               />
@@ -444,7 +462,9 @@ export function GenerateScreen({
             <div className="flex flex-col gap-3">
               <label className="text-on-surface-variant font-label text-sm font-extrabold tracking-[0.05rem]">RECENTES</label>
               <button
+                type="button"
                 onClick={onGoToHistory}
+                aria-label="Ir para histórico de documentos"
                 className="bg-surface-container-low hover:bg-surface-container-high transition-colors rounded-xl p-5 text-lg font-bold flex items-center justify-center gap-3 text-secondary"
               >
                 <History className="w-5 h-5" />
@@ -485,8 +505,10 @@ export function GenerateScreen({
 
       <div className="fixed bottom-24 left-0 w-full px-6 z-40 pointer-events-none max-w-2xl mx-auto right-0">
         <button
+          type="button"
           onClick={handleGenerateDocument}
           disabled={isSubmitting}
+          aria-label={isPromissory ? 'Gerar nota promissória em PDF' : 'Gerar recibo em PDF'}
           className="pointer-events-auto w-full h-[72px] primary-gradient-btn rounded-2xl flex items-center justify-center gap-3 text-on-primary font-headline font-black text-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] active:scale-95 transition-transform disabled:cursor-not-allowed disabled:opacity-70"
         >
           <FileText className="w-6 h-6" />

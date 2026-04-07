@@ -1,0 +1,47 @@
+{
+  "id": "/",
+  "name": "PWA Recibos e Notas Promissórias",
+  "short_name": "Recibos PWA",
+  "description": "Gerador de recibos e notas promissórias em PDF com histórico de documentos.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0e0e0e",
+  "background_color": "#0e0e0e",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Gerar Documento",
+      "short_name": "Gerar",
+      "description": "Abrir a tela principal para gerar recibo ou nota promissória",
+      "url": "/"
+    },
+    {
+      "name": "Histórico",
+      "short_name": "Histórico",
+      "description": "Abrir o histórico de documentos gerados",
+      "url": "/"
+    }
+  ]
+}
