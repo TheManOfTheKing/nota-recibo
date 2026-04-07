@@ -78,3 +78,18 @@ nao execute o bootstrap completo novamente. Execute apenas `supabase_profiles_up
 2. Oferecer sugestões ao digitar nome ou CPF/CNPJ.
 3. Ao selecionar sugestão, preencher automaticamente os dados do cliente no formulário/tela de geração.
 4. Permitir edição e exclusão com feedback claro de sucesso/erro.
+
+## 8) Recibos (`public.documents`) + PDF em Storage
+
+- Para recibos, gerar PDF no frontend com `jsPDF`.
+- Converter o documento para `Blob` e enviar ao bucket `documents-pdfs`.
+- Salvar metadados em `public.documents` com:
+  - `user_id`
+  - `emitter_id`
+  - `client_id`
+  - `document_type = 'receipt'`
+  - `issue_date`
+  - `amount`
+  - `description`
+  - `pdf_url`
+- A UI de histórico deve priorizar `pdf_url` para abrir/download da via já persistida.

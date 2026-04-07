@@ -16,9 +16,14 @@ export function HistoryScreen({ history, emitters }: HistoryScreenProps) {
   );
 
   const handleDownload = (doc: DocumentRecord) => {
+    if (doc.pdfUrl) {
+      window.open(doc.pdfUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     const issuer = emitters.find((emitter) => emitter.id === doc.issuerId) ?? emitters[0];
     if (issuer) {
-      generatePDF(doc, issuer);
+      void generatePDF(doc, issuer);
     } else {
       alert('Emissor não encontrado para este documento. Configure um emissor primeiro.');
     }

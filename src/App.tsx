@@ -32,6 +32,10 @@ import {
   updateClient,
   type UpsertClientInput,
 } from './lib/clients';
+import {
+  createReceiptDocument,
+  toDocumentErrorMessage,
+} from './lib/documents';
 import type { Customer, Emitter, UserProfile } from './types';
 
 function AuthLoadingScreen() {
@@ -307,6 +311,31 @@ export default function App() {
     setCustomers((prev) => prev.filter((item) => item.id !== customer.id));
   };
 
+  const handleCreateReceiptDocument = async (payload: {
+    emitter: Emitter;
+    customer: Customer;
+    amount: number;
+    description: string;
+  }) => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    try {
+      const record = await createReceiptDocument({
+        userId: session.user.id,
+        emitter: payload.emitter,
+        customer: payload.customer,
+        amount: payload.amount,
+        description: payload.description,
+      });
+      addDocument(record);
+      return record;
+    } catch (error) {
+      throw new Error(toDocumentErrorMessage(error));
+    }
+  };
+
   if (isAuthLoading || authStatus === 'loading') {
     return <AuthLoadingScreen />;
   }
@@ -358,7 +387,7 @@ export default function App() {
           <GenerateScreen
             customers={customers}
             emitters={emitters}
-            onSaveDocument={addDocument}
+            onCreateReceiptDocument={handleCreateReceiptDocument}
             onGoToHistory={() => setActiveTab('history')}
           />
         )}

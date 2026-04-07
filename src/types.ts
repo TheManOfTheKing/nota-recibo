@@ -32,6 +32,9 @@ export interface DocumentRecord {
   description: string;
   status: 'PAGO' | 'EMITIDO' | 'PROCESSADO';
   issuerId: string;
+  pdfUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type TabType = 'generate' | 'customers' | 'history' | 'issuer';
