@@ -13,6 +13,49 @@
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <script>
+      (() => {
+        const RELOAD_KEY = '__pwa_asset_reload_once__';
+
+        const reloadWithFreshParam = (reason) => {
+          try {
+            if (sessionStorage.getItem(RELOAD_KEY)) {
+              return;
+            }
+            sessionStorage.setItem(RELOAD_KEY, reason);
+          } catch {
+            // Ignore storage errors and continue with reload.
+          }
+
+          const url = new URL(window.location.href);
+          url.searchParams.set('__fresh', String(Date.now()));
+          window.location.replace(url.toString());
+        };
+
+        window.addEventListener(
+          'error',
+          (event) => {
+            const target = event.target;
+            if (target instanceof HTMLScriptElement && target.src.includes('/assets/')) {
+              reloadWithFreshParam('script-load-failed');
+            }
+          },
+          true,
+        );
+
+        window.addEventListener('unhandledrejection', (event) => {
+          const message = String(
+            (event.reason && event.reason.message) || event.reason || '',
+          );
+          if (
+            message.includes('Failed to fetch dynamically imported module') ||
+            message.includes('Importing a module script failed')
+          ) {
+            reloadWithFreshParam('chunk-load-failed');
+          }
+        });
+      })();
+    </script>
     <title>Gerador de Recibos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
