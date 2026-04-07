@@ -6,6 +6,8 @@ Este guia padroniza a integração do PWA com Supabase para autenticação, sess
 
 - `supabase_schema.sql`
 - `supabase_profiles_upgrade.sql` (usar quando `profiles` ja existe)
+- `supabase_documents_upgrade.sql` (usar quando `documents` ja existe e precisa alinhar constraints/status)
+- `supabase_storage_setup.sql` (cria/atualiza buckets e policies de Storage)
 - `supabase_integration_guide.md`
 - `prompt_guide.md`
 - `arquitetura_pwa_recibos.md`
@@ -93,3 +95,37 @@ nao execute o bootstrap completo novamente. Execute apenas `supabase_profiles_up
   - `description`
   - `pdf_url`
 - A UI de histórico deve priorizar `pdf_url` para abrir/download da via já persistida.
+
+## 9) Notas promissórias (`public.documents`) + PDF em Storage
+
+- Para notas promissórias, reutilizar `jsPDF` no frontend e enviar o `Blob` para `documents-pdfs`.
+- Salvar em `public.documents` com:
+  - `document_type = 'promissory_note'`
+  - `issue_date`
+  - `due_date`
+  - `status` (`pending`, `paid`, `cancelled`)
+  - `amount`
+  - `description`
+  - `pdf_url`
+- Em histórico, abrir preferencialmente o `pdf_url` salvo para garantir rastreabilidade e segunda via fiel.
+
+### Erro comum
+
+Se aparecer:
+`Bucket de PDFs não encontrado. Crie o bucket "documents-pdfs" no Supabase Storage.`
+
+Execute `supabase_storage_setup.sql` no SQL Editor do Supabase.
+
+## 10) Upgrade idempotente de `public.documents`
+
+Se a tabela `documents` ja existe e foi criada antes das regras atuais, execute:
+
+- `supabase_documents_upgrade.sql`
+
+Esse script:
+
+- normaliza `document_type` para `receipt | promissory_note`
+- normaliza `status` para `pending | paid | cancelled`
+- adiciona constraints de integridade
+- garante `due_date` obrigatoria para `promissory_note`
+- recria policies RLS da tabela `documents`

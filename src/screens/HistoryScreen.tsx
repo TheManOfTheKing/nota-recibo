@@ -8,6 +8,18 @@ interface HistoryScreenProps {
   emitters: Emitter[];
 }
 
+function getStatusLabel(status: DocumentRecord['status']): string {
+  if (status === 'paid') {
+    return 'Pago';
+  }
+
+  if (status === 'cancelled') {
+    return 'Cancelado';
+  }
+
+  return 'Pendente';
+}
+
 export function HistoryScreen({ history, emitters }: HistoryScreenProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -79,7 +91,7 @@ export function HistoryScreen({ history, emitters }: HistoryScreenProps) {
               <div className="flex items-center justify-between mt-2 pt-4 border-t border-outline-variant/10">
                 <div className="flex gap-2">
                   <span className="bg-surface-container-highest text-tertiary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter">
-                    {doc.status}
+                    {getStatusLabel(doc.status)}
                   </span>
                 </div>
                 <button 

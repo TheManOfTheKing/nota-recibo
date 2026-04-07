@@ -125,14 +125,15 @@ CREATE TABLE public.documents (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     emitter_id UUID REFERENCES public.emitters(id) ON DELETE SET NULL,
     client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
-    document_type VARCHAR(50) NOT NULL, -- 'receipt' ou 'promissory_note'
+    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('receipt', 'promissory_note')),
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     amount NUMERIC(10, 2) NOT NULL,
     description TEXT, -- Para recibos: finalidade; para notas promissórias: descrição do débito
     pdf_url TEXT, -- URL para o PDF gerado, armazenado no Supabase Storage
     -- Campos específicos para Notas Promissórias
     due_date DATE, -- Data de vencimento
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'paid', 'cancelled'
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'cancelled')),
+    CHECK (document_type <> 'promissory_note' OR due_date IS NOT NULL),
     -- Campos adicionais para metadados do documento, se necessário
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -30,7 +30,7 @@ export interface DocumentRecord {
   date: string;
   dueDate?: string;
   description: string;
-  status: 'PAGO' | 'EMITIDO' | 'PROCESSADO';
+  status: 'pending' | 'paid' | 'cancelled';
   issuerId: string;
   pdfUrl?: string;
   createdAt?: string;

@@ -33,6 +33,7 @@ import {
   type UpsertClientInput,
 } from './lib/clients';
 import {
+  createPromissoryNoteDocument,
   createReceiptDocument,
   toDocumentErrorMessage,
 } from './lib/documents';
@@ -336,6 +337,40 @@ export default function App() {
     }
   };
 
+  const handleCreatePromissoryNoteDocument = async (payload: {
+    emitter: Emitter;
+    customer: Customer;
+    amount: number;
+    description: string;
+    dueDate: string;
+    status: 'pending' | 'paid' | 'cancelled';
+  }) => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const parsedDueDate = new Date(`${payload.dueDate}T00:00:00`);
+    if (Number.isNaN(parsedDueDate.getTime())) {
+      throw new Error('Data de vencimento inválida.');
+    }
+
+    try {
+      const record = await createPromissoryNoteDocument({
+        userId: session.user.id,
+        emitter: payload.emitter,
+        customer: payload.customer,
+        amount: payload.amount,
+        description: payload.description,
+        dueDate: parsedDueDate,
+        status: payload.status,
+      });
+      addDocument(record);
+      return record;
+    } catch (error) {
+      throw new Error(toDocumentErrorMessage(error));
+    }
+  };
+
   if (isAuthLoading || authStatus === 'loading') {
     return <AuthLoadingScreen />;
   }
@@ -388,6 +423,7 @@ export default function App() {
             customers={customers}
             emitters={emitters}
             onCreateReceiptDocument={handleCreateReceiptDocument}
+            onCreatePromissoryNoteDocument={handleCreatePromissoryNoteDocument}
             onGoToHistory={() => setActiveTab('history')}
           />
         )}

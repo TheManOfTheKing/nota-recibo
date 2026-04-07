@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { generateReceiptPdfBlob } from '../services/pdfService';
+import { generatePromissoryNotePdfBlob, generateReceiptPdfBlob } from '../services/pdfService';
 import type { Customer, DocumentRecord, Emitter } from '../types';
 
 interface DocumentRow {
@@ -23,6 +23,17 @@ interface CreateReceiptDocumentInput {
   customer: Customer;
   amount: number;
   description: string;
+  issueDate?: Date;
+}
+
+interface CreatePromissoryNoteDocumentInput {
+  userId: string;
+  emitter: Emitter;
+  customer: Customer;
+  amount: number;
+  description: string;
+  dueDate: Date;
+  status: DocumentRecord['status'];
   issueDate?: Date;
 }
 
@@ -56,10 +67,20 @@ function formatDateForUi(dateIso: string): string {
 }
 
 function normalizeStatus(value: string | null): DocumentRecord['status'] {
-  if (value === 'PAGO' || value === 'EMITIDO' || value === 'PROCESSADO') {
-    return value;
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'pending' || normalized === 'paid' || normalized === 'cancelled') {
+    return normalized;
   }
-  return 'PAGO';
+
+  if (value === 'PAGO' || value === 'PROCESSADO') {
+    return 'paid';
+  }
+
+  if (value === 'EMITIDO') {
+    return 'pending';
+  }
+
+  return 'pending';
 }
 
 function mapDocumentRowToRecord(row: DocumentRow, customer: Customer): DocumentRecord {
@@ -71,7 +92,7 @@ function mapDocumentRowToRecord(row: DocumentRow, customer: Customer): DocumentR
     clientAddress: customer.address,
     amount: Number(row.amount),
     date: formatDateForUi(row.issue_date),
-    dueDate: row.due_date ?? undefined,
+    dueDate: row.due_date ? formatDateForUi(row.due_date) : undefined,
     description: row.description ?? '',
     status: normalizeStatus(row.status),
     issuerId: row.emitter_id ?? '',
@@ -87,14 +108,21 @@ function generateReceiptNumber(issueDate: Date): string {
   return `${stamp}-${random}`;
 }
 
-async function uploadReceiptPdf(
+function generatePromissoryNoteNumber(issueDate: Date): string {
+  const stamp = `${issueDate.getFullYear()}${String(issueDate.getMonth() + 1).padStart(2, '0')}${String(issueDate.getDate()).padStart(2, '0')}`;
+  const random = Math.floor(10000 + Math.random() * 90000);
+  return `NP-${stamp}-${random}`;
+}
+
+async function uploadDocumentPdf(
   userId: string,
+  folder: 'receipts' | 'promissory-notes',
   customer: Customer,
   pdfBlob: Blob,
   issueDate: Date,
 ): Promise<string> {
   const safeCustomerName = sanitizeFileName(customer.name || 'cliente');
-  const path = `${userId}/receipts/${formatDateForDb(issueDate)}-${Date.now()}-${safeCustomerName}.pdf`;
+  const path = `${userId}/${folder}/${formatDateForDb(issueDate)}-${Date.now()}-${safeCustomerName}.pdf`;
 
   const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
@@ -125,7 +153,7 @@ export async function createReceiptDocument(input: CreateReceiptDocumentInput): 
     issueDate,
   });
 
-  const pdfUrl = await uploadReceiptPdf(input.userId, input.customer, pdfBlob, issueDate);
+  const pdfUrl = await uploadDocumentPdf(input.userId, 'receipts', input.customer, pdfBlob, issueDate);
 
   const { data, error } = await documentsTable()
     .insert({
@@ -137,7 +165,49 @@ export async function createReceiptDocument(input: CreateReceiptDocumentInput): 
       amount: input.amount,
       description: input.description,
       pdf_url: pdfUrl,
-      status: 'PAGO',
+      status: 'paid',
+    })
+    .select(DOCUMENT_COLUMNS)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapDocumentRowToRecord(data as DocumentRow, input.customer);
+}
+
+export async function createPromissoryNoteDocument(
+  input: CreatePromissoryNoteDocumentInput,
+): Promise<DocumentRecord> {
+  const issueDate = input.issueDate ?? new Date();
+  const noteNumber = generatePromissoryNoteNumber(issueDate);
+
+  const pdfBlob = await generatePromissoryNotePdfBlob({
+    emitter: input.emitter,
+    customer: input.customer,
+    amount: input.amount,
+    description: input.description,
+    noteNumber,
+    issueDate,
+    dueDate: input.dueDate,
+    status: input.status,
+  });
+
+  const pdfUrl = await uploadDocumentPdf(input.userId, 'promissory-notes', input.customer, pdfBlob, issueDate);
+
+  const { data, error } = await documentsTable()
+    .insert({
+      user_id: input.userId,
+      emitter_id: input.emitter.id,
+      client_id: input.customer.id,
+      document_type: 'promissory_note',
+      issue_date: formatDateForDb(issueDate),
+      amount: input.amount,
+      description: input.description,
+      due_date: formatDateForDb(input.dueDate),
+      status: input.status,
+      pdf_url: pdfUrl,
     })
     .select(DOCUMENT_COLUMNS)
     .single();
@@ -158,5 +228,5 @@ export function toDocumentErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Não foi possível gerar e salvar o recibo. Tente novamente.';
+  return 'Não foi possível gerar e salvar o documento. Tente novamente.';
 }
