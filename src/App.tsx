@@ -43,9 +43,11 @@ import {
 import {
   createPromissoryNoteDocument,
   createReceiptDocument,
+  listDocuments,
   toDocumentErrorMessage,
+  toDocumentsLoadErrorMessage,
 } from './lib/documents';
-import type { Customer, Emitter, ManagedUser, UserProfile, UserRole } from './types';
+import type { Customer, DocumentRecord, Emitter, ManagedUser, UserProfile, UserRole } from './types';
 
 function AuthLoadingScreen() {
   return (
@@ -129,17 +131,22 @@ export default function App() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(false);
   const [customersError, setCustomersError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState<string | null>(null);
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
   const [isManagedUsersLoading, setIsManagedUsersLoading] = useState(false);
   const [managedUsersError, setManagedUsersError] = useState<string | null>(null);
 
-  const { activeTab, setActiveTab, history, addDocument } = useAppStore();
+  const { activeTab, setActiveTab } = useAppStore();
 
   const clearProtectedState = () => {
     setEmitters([]);
     setEmittersError(null);
     setCustomers([]);
     setCustomersError(null);
+    setDocuments([]);
+    setDocumentsError(null);
     setManagedUsers([]);
     setManagedUsersError(null);
   };
@@ -311,6 +318,30 @@ export default function App() {
     void loadCustomers(session.user.id);
   }, [authStatus, loadCustomers, session?.user?.id]);
 
+  const loadDocuments = useCallback(async (userId: string) => {
+    setIsDocumentsLoading(true);
+    setDocumentsError(null);
+    try {
+      const rows = await listDocuments(userId);
+      setDocuments(rows);
+    } catch (error) {
+      setDocumentsError(toDocumentsLoadErrorMessage(error));
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !session?.user?.id) {
+      setDocuments([]);
+      setDocumentsError(null);
+      setIsDocumentsLoading(false);
+      return;
+    }
+
+    void loadDocuments(session.user.id);
+  }, [authStatus, loadDocuments, session?.user?.id]);
+
   const loadManagedUsers = useCallback(async () => {
     setIsManagedUsersLoading(true);
     setManagedUsersError(null);
@@ -450,7 +481,7 @@ export default function App() {
         amount: payload.amount,
         description: payload.description,
       });
-      addDocument(record);
+      setDocuments((prev) => [record, ...prev.filter((item) => item.id !== record.id)]);
       return record;
     } catch (error) {
       throw new Error(toDocumentErrorMessage(error));
@@ -484,7 +515,7 @@ export default function App() {
         dueDate: parsedDueDate,
         status: payload.status,
       });
-      addDocument(record);
+      setDocuments((prev) => [record, ...prev.filter((item) => item.id !== record.id)]);
       return record;
     } catch (error) {
       throw new Error(toDocumentErrorMessage(error));
@@ -569,7 +600,19 @@ export default function App() {
             onDeleteCustomer={handleDeleteCustomer}
           />
         )}
-        {activeTab === 'history' && <HistoryScreen history={history} emitters={emitters} />}
+        {activeTab === 'history' && (
+          <HistoryScreen
+            documents={documents}
+            isLoading={isDocumentsLoading}
+            loadError={documentsError}
+            onRefresh={async () => {
+              if (!session?.user?.id) {
+                return;
+              }
+              await loadDocuments(session.user.id);
+            }}
+          />
+        )}
         {activeTab === 'issuer' && (
           <IssuerScreen
             emitters={emitters}

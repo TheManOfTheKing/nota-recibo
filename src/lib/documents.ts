@@ -17,6 +17,15 @@ interface DocumentRow {
   updated_at: string;
 }
 
+interface DocumentClientRow {
+  name: string | null;
+  address: string | null;
+}
+
+interface DocumentWithClientRow extends DocumentRow {
+  client: DocumentClientRow | DocumentClientRow[] | null;
+}
+
 interface CreateReceiptDocumentInput {
   userId: string;
   emitter: Emitter;
@@ -40,6 +49,8 @@ interface CreatePromissoryNoteDocumentInput {
 const DOCUMENTS_BUCKET = 'documents-pdfs';
 const DOCUMENT_COLUMNS =
   'id, document_type, client_id, emitter_id, issue_date, amount, description, due_date, status, pdf_url, created_at, updated_at';
+const LIST_DOCUMENT_COLUMNS =
+  'id, document_type, client_id, emitter_id, issue_date, amount, description, due_date, status, pdf_url, created_at, updated_at, client:clients(name,address)';
 const documentsTable = () => supabase.schema('public').from('documents');
 
 function sanitizeFileName(value: string): string {
@@ -83,13 +94,43 @@ function normalizeStatus(value: string | null): DocumentRecord['status'] {
   return 'pending';
 }
 
-function mapDocumentRowToRecord(row: DocumentRow, customer: Customer): DocumentRecord {
+function mapDocumentRowToRecord(
+  row: DocumentRow,
+  customer: Pick<Customer, 'id' | 'name' | 'address'> | null,
+): DocumentRecord {
+  const customerName = customer?.name?.trim() ? customer.name : 'Cliente';
+  const customerAddress = customer?.address ?? '';
+
   return {
     id: row.id,
     type: row.document_type,
-    customerId: row.client_id ?? customer.id,
-    customerName: customer.name,
-    clientAddress: customer.address,
+    customerId: row.client_id ?? customer?.id ?? '',
+    customerName,
+    clientAddress: customerAddress,
+    amount: Number(row.amount),
+    date: formatDateForUi(row.issue_date),
+    dueDate: row.due_date ? formatDateForUi(row.due_date) : undefined,
+    description: row.description ?? '',
+    status: normalizeStatus(row.status),
+    issuerId: row.emitter_id ?? '',
+    pdfUrl: row.pdf_url ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapDocumentWithClientRowToRecord(row: DocumentWithClientRow): DocumentRecord {
+  const client = Array.isArray(row.client) ? row.client[0] ?? null : row.client;
+  const customerId = row.client_id ?? '';
+  const customerName = client?.name?.trim() || 'Cliente removido';
+  const customerAddress = client?.address ?? '';
+
+  return {
+    id: row.id,
+    type: row.document_type,
+    customerId,
+    customerName,
+    clientAddress: customerAddress,
     amount: Number(row.amount),
     date: formatDateForUi(row.issue_date),
     dueDate: row.due_date ? formatDateForUi(row.due_date) : undefined,
@@ -219,6 +260,19 @@ export async function createPromissoryNoteDocument(
   return mapDocumentRowToRecord(data as DocumentRow, input.customer);
 }
 
+export async function listDocuments(userId: string): Promise<DocumentRecord[]> {
+  const { data, error } = await documentsTable()
+    .select(LIST_DOCUMENT_COLUMNS)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapDocumentWithClientRowToRecord(row as DocumentWithClientRow));
+}
+
 export function toDocumentErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     const message = error.message.toLowerCase();
@@ -229,4 +283,12 @@ export function toDocumentErrorMessage(error: unknown): string {
   }
 
   return 'Não foi possível gerar e salvar o documento. Tente novamente.';
+}
+
+export function toDocumentsLoadErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return 'Não foi possível carregar o histórico de documentos.';
 }
