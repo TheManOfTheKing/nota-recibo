@@ -32,3 +32,10 @@ export interface DocumentRecord {
 
 export type TabType = 'generate' | 'customers' | 'history' | 'issuer';
 
+export type UserRole = 'admin' | 'user';
+
+export interface UserProfile {
+  id: string;
+  role: UserRole;
+}
+
