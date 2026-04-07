@@ -108,6 +108,22 @@ export function AuthScreen({
           </div>
           Novas contas entram como <strong>pendentes</strong> e só acessam o app após aprovação de um <strong>admin</strong>.
         </footer>
+
+        <p className="mt-4 text-center text-xs font-medium leading-relaxed text-on-surface-variant">
+          © 2026 PWA Recibos — Gerador de Recibos e Notas Promissórias
+          <br />
+          Desenvolvido por{' '}
+          <a
+            href="https://wa.me/5512982176890?text=Quero%20meu%20sistema%20..."
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-primary underline underline-offset-2 hover:text-primary-container focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container"
+            aria-label="Falar com AndreSD no WhatsApp"
+          >
+            AndreSD
+          </a>
+          .
+        </p>
       </section>
     </main>
   );
