@@ -24,7 +24,15 @@ import {
   updateEmitter,
   type UpsertEmitterInput,
 } from './lib/emitters';
-import type { Emitter, UserProfile } from './types';
+import {
+  createClient,
+  deleteClient,
+  listClients,
+  toClientErrorMessage,
+  updateClient,
+  type UpsertClientInput,
+} from './lib/clients';
+import type { Customer, Emitter, UserProfile } from './types';
 
 function AuthLoadingScreen() {
   return (
@@ -69,12 +77,13 @@ export default function App() {
   const [emitters, setEmitters] = useState<Emitter[]>([]);
   const [isEmittersLoading, setIsEmittersLoading] = useState(false);
   const [emittersError, setEmittersError] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isCustomersLoading, setIsCustomersLoading] = useState(false);
+  const [customersError, setCustomersError] = useState<string | null>(null);
 
   const {
     activeTab,
     setActiveTab,
-    customers,
-    addCustomer,
     history,
     addDocument,
   } = useAppStore();
@@ -87,6 +96,8 @@ export default function App() {
       setAuthProfile(null);
       setEmitters([]);
       setEmittersError(null);
+      setCustomers([]);
+      setCustomersError(null);
       setIsAuthLoading(false);
       return;
     }
@@ -181,6 +192,8 @@ export default function App() {
       setAuthInfo(null);
       setEmitters([]);
       setEmittersError(null);
+      setCustomers([]);
+      setCustomersError(null);
     } catch (error) {
       setAuthError(toAuthErrorMessage(error));
     } finally {
@@ -212,6 +225,30 @@ export default function App() {
     void loadEmitters(session.user.id);
   }, [authStatus, loadEmitters, session?.user?.id]);
 
+  const loadCustomers = useCallback(async (userId: string) => {
+    setIsCustomersLoading(true);
+    setCustomersError(null);
+    try {
+      const rows = await listClients(userId);
+      setCustomers(rows);
+    } catch (error) {
+      setCustomersError(toClientErrorMessage(error));
+    } finally {
+      setIsCustomersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !session?.user?.id) {
+      setCustomers([]);
+      setCustomersError(null);
+      setIsCustomersLoading(false);
+      return;
+    }
+
+    void loadCustomers(session.user.id);
+  }, [authStatus, loadCustomers, session?.user?.id]);
+
   const handleCreateEmitter = async (payload: UpsertEmitterInput): Promise<Emitter> => {
     if (!session?.user?.id) {
       throw new Error('Usuário não autenticado.');
@@ -239,6 +276,35 @@ export default function App() {
 
     await deleteEmitter(session.user.id, emitter);
     setEmitters((prev) => prev.filter((item) => item.id !== emitter.id));
+  };
+
+  const handleCreateCustomer = async (payload: UpsertClientInput): Promise<Customer> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const created = await createClient(session.user.id, payload);
+    setCustomers((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
+    return created;
+  };
+
+  const handleUpdateCustomer = async (customerId: string, payload: UpsertClientInput): Promise<Customer> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    const updated = await updateClient(session.user.id, customerId, payload);
+    setCustomers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    return updated;
+  };
+
+  const handleDeleteCustomer = async (customer: Customer): Promise<void> => {
+    if (!session?.user?.id) {
+      throw new Error('Usuário não autenticado.');
+    }
+
+    await deleteClient(session.user.id, customer.id);
+    setCustomers((prev) => prev.filter((item) => item.id !== customer.id));
   };
 
   if (isAuthLoading || authStatus === 'loading') {
@@ -299,7 +365,11 @@ export default function App() {
         {activeTab === 'customers' && (
           <CustomersScreen
             customers={customers}
-            onAddCustomer={addCustomer}
+            isLoading={isCustomersLoading}
+            loadError={customersError}
+            onCreateCustomer={handleCreateCustomer}
+            onUpdateCustomer={handleUpdateCustomer}
+            onDeleteCustomer={handleDeleteCustomer}
           />
         )}
         {activeTab === 'history' && (

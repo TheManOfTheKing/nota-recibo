@@ -68,3 +68,13 @@ nao execute o bootstrap completo novamente. Execute apenas `supabase_profiles_up
 2. Fazer upload do arquivo no Storage.
 3. Salvar `logo_url` pública na tabela `emitters`.
 - Se o bucket ainda não existir, criar no painel do Supabase e configurar políticas para usuários autenticados.
+
+## 7) Clientes (`public.clients`) e auto-preenchimento
+
+- CRUD de clientes deve usar a tabela `public.clients` com `user_id = auth.uid()`.
+- Campos obrigatórios no app: `name`, `cpf_cnpj`, `phone`, `address`.
+- Fluxo recomendado:
+1. Buscar clientes do usuário logado.
+2. Oferecer sugestões ao digitar nome ou CPF/CNPJ.
+3. Ao selecionar sugestão, preencher automaticamente os dados do cliente no formulário/tela de geração.
+4. Permitir edição e exclusão com feedback claro de sucesso/erro.

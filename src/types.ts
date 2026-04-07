@@ -1,10 +1,12 @@
 export interface Customer {
   id: string;
+  userId: string;
   name: string;
-  document: string; // CPF or CNPJ
+  cpfCnpj: string;
   phone: string;
   address: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Emitter {
