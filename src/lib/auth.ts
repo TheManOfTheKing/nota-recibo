@@ -1,6 +1,6 @@
 import type { AuthError, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
-import type { UserProfile, UserRole } from '../types';
+import type { UserProfile } from '../types';
 
 interface AuthCredentials {
   email: string;
@@ -12,6 +12,7 @@ interface SignUpResult {
 }
 
 const PROFILE_COLUMNS = 'id, role';
+const profilesTable = () => supabase.schema('public').from('profiles');
 
 function normalizeProfile(data: unknown): UserProfile {
   if (!data || typeof data !== 'object') {
@@ -36,8 +37,7 @@ function normalizeProfile(data: unknown): UserProfile {
 }
 
 async function getProfileById(userId: string): Promise<UserProfile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
+  const { data, error } = await profilesTable()
     .select(PROFILE_COLUMNS)
     .eq('id', userId)
     .maybeSingle();
@@ -53,22 +53,9 @@ async function getProfileById(userId: string): Promise<UserProfile | null> {
   return normalizeProfile(data);
 }
 
-async function countProfiles(): Promise<number> {
-  const { count, error } = await supabase
-    .from('profiles')
-    .select('id', { head: true, count: 'exact' });
-
-  if (error) {
-    throw error;
-  }
-
-  return count ?? 0;
-}
-
-async function createProfile(userId: string, role: UserRole): Promise<UserProfile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .insert({ id: userId, role })
+async function createProfile(userId: string): Promise<UserProfile> {
+  const { data, error } = await profilesTable()
+    .insert({ id: userId })
     .select(PROFILE_COLUMNS)
     .single();
 
@@ -91,9 +78,7 @@ export async function ensureUserProfile(user: User): Promise<UserProfile> {
     return existing;
   }
 
-  const totalProfiles = await countProfiles();
-  const role: UserRole = totalProfiles === 0 ? 'admin' : 'user';
-  return createProfile(user.id, role);
+  return createProfile(user.id);
 }
 
 export async function signInWithPassword(credentials: AuthCredentials): Promise<void> {
@@ -138,8 +123,7 @@ export async function promoteUserToAdmin(currentUserId: string, targetUserId: st
     throw new Error('Only admin users can promote other users.');
   }
 
-  const { error } = await supabase
-    .from('profiles')
+  const { error } = await profilesTable()
     .update({ role: 'admin' })
     .eq('id', targetUserId);
 

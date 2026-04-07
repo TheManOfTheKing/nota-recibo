@@ -33,6 +33,34 @@ $$;
 REVOKE ALL ON FUNCTION public.current_user_is_admin() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_user_is_admin() TO authenticated;
 
+-- Trigger de segurança para definir a role corretamente no cadastro do perfil:
+-- primeiro perfil => admin, demais => user (a menos que o inseridor já seja admin).
+CREATE OR REPLACE FUNCTION public.handle_profile_role_on_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    total_profiles BIGINT;
+BEGIN
+    SELECT COUNT(*) INTO total_profiles FROM public.profiles;
+
+    IF total_profiles = 0 THEN
+        NEW.role := 'admin';
+    ELSIF NOT public.current_user_is_admin() THEN
+        NEW.role := 'user';
+    END IF;
+
+    NEW.created_at := COALESCE(NEW.created_at, NOW());
+    NEW.updated_at := COALESCE(NEW.updated_at, NOW());
+    RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.handle_profile_role_on_insert() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.handle_profile_role_on_insert() TO authenticated;
+
 -- Políticas de RLS para a tabela de perfis
 CREATE POLICY "Users can insert their own profile." ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can select their own profile." ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -135,6 +163,7 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers para as tabelas
+CREATE TRIGGER set_profile_role_on_insert BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.handle_profile_role_on_insert();
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_emitters_updated_at BEFORE UPDATE ON public.emitters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_clients_updated_at BEFORE UPDATE ON public.clients FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

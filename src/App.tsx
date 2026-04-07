@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { TopBar } from './components/TopBar';
+import { AuthStatusNav } from './components/AuthStatusNav';
 import { BottomNav } from './components/BottomNav';
 import { GenerateScreen } from './screens/GenerateScreen';
 import { CustomersScreen } from './screens/CustomersScreen';
@@ -52,8 +52,10 @@ function MissingProfileScreen({ onSignOut }: { onSignOut: () => Promise<void> })
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authProfile, setAuthProfile] = useState<UserProfile | null>(null);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authInfo, setAuthInfo] = useState<string | null>(null);
 
@@ -73,6 +75,7 @@ export default function App() {
     setSession(nextSession);
 
     if (!nextSession?.user) {
+      setAuthStatus('unauthenticated');
       setAuthProfile(null);
       setIsAuthLoading(false);
       return;
@@ -80,9 +83,11 @@ export default function App() {
 
     try {
       const profile = await ensureUserProfile(nextSession.user);
+      setAuthStatus('authenticated');
       setAuthProfile(profile);
       setAuthError(null);
     } catch (error) {
+      setAuthStatus('unauthenticated');
       setAuthProfile(null);
       setAuthError(toAuthErrorMessage(error));
     } finally {
@@ -105,6 +110,7 @@ export default function App() {
 
       if (error) {
         setAuthError(toAuthErrorMessage(error));
+        setAuthStatus('unauthenticated');
         setIsAuthLoading(false);
         return;
       }
@@ -158,20 +164,23 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     try {
       await signOutCurrentUser();
       setActiveTab('generate');
       setAuthInfo(null);
     } catch (error) {
       setAuthError(toAuthErrorMessage(error));
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
-  if (isAuthLoading) {
+  if (isAuthLoading || authStatus === 'loading') {
     return <AuthLoadingScreen />;
   }
 
-  if (!session?.user) {
+  if (authStatus !== 'authenticated' || !session?.user) {
     return (
       <AuthScreen
         isSubmitting={isAuthSubmitting}
@@ -204,7 +213,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col">
-      <TopBar title={getTitle()} userRole={authProfile.role} onSignOut={handleSignOut} />
+      <AuthStatusNav
+        title={getTitle()}
+        authStatus="authenticated"
+        userEmail={session.user.email ?? 'Usuário sem e-mail'}
+        userRole={authProfile.role}
+        isSigningOut={isSigningOut}
+        onSignOut={handleSignOut}
+      />
 
       <div className="flex-1">
         {activeTab === 'generate' && (
